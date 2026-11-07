@@ -1,69 +1,91 @@
-import Image from "next/image";
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { SearchField } from "@/components/arc/search-field/search-field";
+import { ArtworkArt } from "@/components/artwork-art";
+import { ArtCard, Actions, LinkButton } from "@/components/ui-bits";
+import { artistById, money } from "@/lib/format";
+import { useStore } from "@/lib/store";
+
+const MEDIUM_LINKS = ["Oil", "Acrylic", "Watercolour", "Print", "Photography", "Drawing", "Mixed media"];
 
 export default function Home() {
+  const { artworks } = useStore();
+  const router = useRouter();
+  const [q, setQ] = useState("");
+  const live = artworks.filter(a => a.status !== "hidden");
+  const featured = live.find(a => a.id === "art-001") ?? live[0];
+  const fresh = [...live].sort((a, b) => a.listedDaysAgo - b.listedDaysAgo).slice(0, 8);
+  const affordable = live.filter(a => a.rentFee <= 100 && a.status === "available").slice(0, 4);
+  const big = live.filter(a => a.width >= 90 && a.status === "available").slice(0, 4);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="container-page">
+      <section className="grid items-center gap-10 py-12 md:grid-cols-[1.1fr_1fr] md:py-16">
+        <div className="grid max-w-xl gap-6">
+          <span className="eyebrow">Original art, on loan · Montreal</span>
+          <h1 className="serif text-5xl leading-[1.02] md:text-6xl">Live with it for three months. Keep it only if you love it.</h1>
+          <p className="text-[16px] text-muted">Rent original work from independent Montreal artists. When the three months are up, buy it with your rent taken off the price, or send it back.</p>
+          <form className="grid gap-3" onSubmit={e => { e.preventDefault(); router.push(`/browse${q ? `?q=${encodeURIComponent(q)}` : ""}`); }}>
+            <SearchField id="home-search" label="Search artworks" placeholder="Try ‘blue’, ‘oil’ or an artist’s name" value={q} onValueChange={setQ} />
+            <Actions>
+              <LinkButton href="/browse" variant="primary">Browse all {live.length} works</LinkButton>
+              <LinkButton href="/how-it-works" variant="secondary">How renting works</LinkButton>
+            </Actions>
+          </form>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <Link href={`/art/${featured.id}`} className="group grid gap-3">
+          <ArtworkArt artwork={featured} framed className="transition duration-300 group-hover:-translate-y-0.5" />
+          <span className="text-[13px] text-muted"><span className="serif text-[17px] text-foreground">{featured.title}</span> · {artistById(featured.artistId).name} · {money(featured.rentFee)} for 3 months</span>
+        </Link>
+      </section>
+
+      <nav aria-label="Browse by medium" className="flex flex-wrap gap-2 border-y border-line py-4">
+        {MEDIUM_LINKS.map(m => <Link key={m} href={`/browse?medium=${encodeURIComponent(m)}`} className="rounded-full border border-line px-3.5 py-1.5 text-[13px] transition hover:border-foreground">{m}</Link>)}
+        <Link href="/browse?maxRent=100" className="rounded-full border border-line px-3.5 py-1.5 text-[13px] transition hover:border-foreground">Under $100 for 3 months</Link>
+      </nav>
+
+      <Shelf title="New this week" href="/browse" items={fresh} />
+
+      <section className="mt-16 grid gap-8 rounded-[var(--radius-panel)] bg-soft px-6 py-10 md:grid-cols-3 md:px-10">
+        <h2 className="serif text-3xl md:col-span-3">How it works</h2>
+        {[
+          ["Pick a piece", "Every listing shows the price for three months, the full price, and the deposit the artist set."],
+          ["Live with it", "Pick it up for free or have the artist deliver it. It stays on your wall for 90 days."],
+          ["Keep it or return it", "Buy it with your rent taken off the price, or book a return and get your deposit back."],
+        ].map(([t, d], i) => (
+          <div key={t} className="grid content-start gap-2">
+            <span className="text-[13px] text-muted tnum">Step {i + 1}</span>
+            <span className="serif text-2xl">{t}</span>
+            <p className="text-[14px] text-muted">{d}</p>
+          </div>
+        ))}
+      </section>
+
+      <Shelf title="Under $100 for three months" href="/browse?maxRent=100" items={affordable} />
+      <Shelf title="For a big wall" href="/browse?size=large" items={big} />
+
+      <section className="mt-16 flex flex-col items-start justify-between gap-6 border-t border-line pt-10 md:flex-row md:items-center">
+        <div className="grid max-w-lg gap-2">
+          <h2 className="serif text-3xl">Are you an artist?</h2>
+          <p className="text-[15px] text-muted">Earn from work that would otherwise sit in the studio. You set the price, the rental fee and the deposit.</p>
         </div>
-      </main>
+        <LinkButton href="/studio/new" variant="secondary">List a work</LinkButton>
+      </section>
     </div>
+  );
+}
+
+function Shelf({ title, href, items }: { title: string; href: string; items: ReturnType<typeof useStore>["artworks"] }) {
+  return (
+    <section className="mt-14 grid gap-6">
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="serif text-3xl">{title}</h2>
+        <Link href={href} className="link text-[13px]">View all</Link>
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-5 md:gap-y-10">{items.map(a => <ArtCard key={a.id} artwork={a} />)}</div>
+    </section>
   );
 }
