@@ -65,6 +65,8 @@ export interface Rental {
   deliveryFee: number;
   rentFee: number;
   deposit: number;
+  /** How many 3-month terms have been paid for; renewing adds one. */
+  terms: number;
   note: string;
   returnSlot?: string;
   claim?: Claim;
@@ -167,20 +169,21 @@ function round(n: number, to: number) { return Math.max(to, Math.round(n / to) *
 function buildArtworks(): Artwork[] {
   const r = rng(20261107);
   const fixed: Partial<Artwork>[] = [
-    { title: "Orange Hour", artistId: "a-mara", medium: "Oil", width: 60, height: 80, year: 2025, price: 1800, rentFee: 180, deposit: 450, deliveryFee: 35, art: { style: "sun", palette: PALETTES[0], seed: 1 } },
-    { title: "Low Tide, Tadoussac", artistId: "a-jonah", medium: "Acrylic", width: 50, height: 50, year: 2024, price: 950, rentFee: 110, deposit: 240, deliveryFee: 30, art: { style: "bands", palette: PALETTES[1], seed: 2 } },
-    { title: "Field Notes No. 4", artistId: "a-ines", medium: "Gouache", width: 40, height: 50, year: 2026, price: 640, rentFee: 75, deposit: 160, deliveryFee: 25, art: { style: "stripes", palette: PALETTES[2], seed: 3 } },
-    { title: "Blue Study (Window)", artistId: "a-theo", medium: "Oil", width: 90, height: 120, year: 2023, price: 3200, rentFee: 290, deposit: 800, deliveryFee: 60, art: { style: "tilt", palette: PALETTES[3], seed: 4 } },
-    { title: "Kiln", artistId: "a-ana", medium: "Mixed media", width: 70, height: 70, year: 2025, price: 1350, rentFee: 140, deposit: 340, deliveryFee: 40, art: { style: "blobs", palette: PALETTES[4], seed: 5 } },
-    { title: "Night Swim", artistId: "a-kofi", medium: "Oil", width: 100, height: 80, year: 2026, price: 2400, rentFee: 220, deposit: 600, deliveryFee: 50, art: { style: "rings", palette: PALETTES[5], seed: 6 } },
-    { title: "Pink Arch", artistId: "a-lea", medium: "Print", width: 50, height: 70, year: 2024, price: 420, rentFee: 50, deposit: 110, deliveryFee: 20, art: { style: "arch", palette: PALETTES[6], seed: 7 } },
-    { title: "Quiet Grid", artistId: "a-sam", medium: "Drawing", width: 30, height: 40, year: 2025, price: 380, rentFee: 45, deposit: 100, deliveryFee: 20, art: { style: "grid", palette: PALETTES[7], seed: 8 } },
+    { title: "Orange Hour", artistId: "a-mara", medium: "Oil", width: 60, height: 80, year: 2025, price: 135, rentFee: 50, deposit: 40, deliveryFee: 10, art: { style: "sun", palette: PALETTES[0], seed: 1 } },
+    { title: "Low Tide, Tadoussac", artistId: "a-jonah", medium: "Acrylic", width: 50, height: 50, year: 2024, price: 95, rentFee: 35, deposit: 30, deliveryFee: 10, art: { style: "bands", palette: PALETTES[1], seed: 2 } },
+    { title: "Field Notes No. 4", artistId: "a-ines", medium: "Gouache", width: 40, height: 50, year: 2026, price: 70, rentFee: 25, deposit: 20, deliveryFee: 8, art: { style: "stripes", palette: PALETTES[2], seed: 3 } },
+    { title: "Blue Study (Window)", artistId: "a-theo", medium: "Oil", width: 90, height: 120, year: 2023, price: 320, rentFee: 85, deposit: 90, deliveryFee: 20, art: { style: "tilt", palette: PALETTES[3], seed: 4 } },
+    { title: "Kiln", artistId: "a-ana", medium: "Mixed media", width: 70, height: 70, year: 2025, price: 160, rentFee: 55, deposit: 50, deliveryFee: 12, art: { style: "blobs", palette: PALETTES[4], seed: 5 } },
+    { title: "Night Swim", artistId: "a-kofi", medium: "Oil", width: 100, height: 80, year: 2026, price: 240, rentFee: 70, deposit: 70, deliveryFee: 15, art: { style: "rings", palette: PALETTES[5], seed: 6 } },
+    { title: "Pink Arch", artistId: "a-lea", medium: "Print", width: 50, height: 70, year: 2024, price: 60, rentFee: 20, deposit: 20, deliveryFee: 8, art: { style: "arch", palette: PALETTES[6], seed: 7 } },
+    { title: "Quiet Grid", artistId: "a-sam", medium: "Drawing", width: 30, height: 40, year: 2025, price: 55, rentFee: 20, deposit: 15, deliveryFee: 8, art: { style: "grid", palette: PALETTES[7], seed: 8 } },
   ];
   const out: Artwork[] = [];
   TITLES.forEach((title, i) => {
     const f = fixed[i];
     const artist = f?.artistId ?? (i < 16 && i >= 8 ? "a-mara" : ARTISTS[Math.floor(r() * ARTISTS.length)].id);
-    const price = f?.price ?? round(250 + Math.pow(r(), 1.6) * 4600, 50);
+    // Student budgets: most pieces sell for $50–$400 and rent for about a third of that.
+    const price = f?.price ?? round(50 + Math.pow(r(), 1.7) * 350, 5);
     const w = f?.width ?? round(25 + r() * 100, 5);
     const h = f?.height ?? round(w * (0.7 + r() * 0.7), 5);
     const medium = f?.medium ?? MEDIUMS[Math.floor(r() * MEDIUMS.length)];
@@ -193,9 +196,9 @@ function buildArtworks(): Artwork[] {
       height: h,
       year: f?.year ?? 2019 + Math.floor(r() * 8),
       price,
-      rentFee: f?.rentFee ?? round(price * (0.08 + r() * 0.04), 5),
-      deposit: f?.deposit ?? round(price * 0.25, 10),
-      deliveryFee: f?.deliveryFee ?? round(20 + (w * h) / 300, 5),
+      rentFee: f?.rentFee ?? Math.max(20, round(price * (0.3 + r() * 0.1), 5)),
+      deposit: f?.deposit ?? Math.max(15, round(price * 0.3, 5)),
+      deliveryFee: f?.deliveryFee ?? Math.round(8 + (w * h) / 1500),
       framed: medium === "Photography" || medium === "Print" ? true : r() > 0.45,
       status: "available",
       listedDaysAgo: Math.floor(r() * 60),
@@ -226,7 +229,7 @@ function rental(id: string, artworkId: string, renterId: string, status: RentalS
     startDate: isoDaysAgo(startedDaysAgo),
     handover,
     deliveryFee: handover === "delivery" ? a.deliveryFee : 0,
-    rentFee: a.rentFee, deposit: a.deposit,
+    rentFee: a.rentFee, deposit: a.deposit, terms: 1,
     note: "",
     events: [{ at: isoDaysAgo(startedDaysAgo + 3), title: "Rental requested" }],
     ...extra,
@@ -242,8 +245,8 @@ export const SEED_RENTALS: Rental[] = [
   rental("r-2043", "art-007", "u-dana", "requested", -3, { note: "For the hallway. Happy to pick up.", handover: "pickup", events: [{ at: isoDaysAgo(1), title: "Rental requested" }] }),
   rental("r-2044", "art-005", "u-dana", "return_booked", 88, { returnSlot: "Sun, Nov 8 · 10:00–12:00", events: [
     { at: isoDaysAgo(91), title: "Rental requested" }, { at: isoDaysAgo(90), title: "Approved by Ana" }, { at: isoDaysAgo(88), title: "Delivered and hung" }, { at: isoDaysAgo(2), title: "Return booked" }] }),
-  rental("r-2045", "art-016", "u-dana", "claim", 95, { claim: { amount: 80, reason: "Scratch or scuff on the surface", note: "There's a 3 cm scuff near the top edge that wasn't in the handover photos.", status: "open" }, events: [
-    { at: isoDaysAgo(97), title: "Rental requested" }, { at: isoDaysAgo(95), title: "Delivered and hung" }, { at: isoDaysAgo(4), title: "Collected by Mara" }, { at: isoDaysAgo(1), title: "Damage reported · $80" }] }),
+  rental("r-2045", "art-016", "u-dana", "claim", 95, { claim: { amount: 15, reason: "Scratch or scuff on the surface", note: "There's a 3 cm scuff near the top edge that wasn't in the handover photos.", status: "open" }, events: [
+    { at: isoDaysAgo(97), title: "Rental requested" }, { at: isoDaysAgo(95), title: "Delivered and hung" }, { at: isoDaysAgo(4), title: "Collected by Mara" }, { at: isoDaysAgo(1), title: "Damage reported · $15" }] }),
   rental("r-1980", "art-008", "u-dana", "closed", 160, { review: 5, events: [
     { at: isoDaysAgo(160), title: "Rental started" }, { at: isoDaysAgo(70), title: "Returned" }, { at: isoDaysAgo(68), title: "Deposit released" }] }),
   rental("r-1955", "art-020", "u-dana", "bought", 200, { events: [
@@ -252,7 +255,7 @@ export const SEED_RENTALS: Rental[] = [
   rental("r-2051", "art-001", "u-priya", "requested", -4, { note: "Hi Mara, this would go above our sofa. North-facing wall, no direct sun.", events: [{ at: isoDaysAgo(0), title: "Rental requested" }] }),
   rental("r-2052", "art-010", "u-noah", "requested", -6, { note: "First time renting. Would love to try it in our living room.", handover: "pickup", events: [{ at: isoDaysAgo(1), title: "Rental requested" }] }),
   rental("r-2053", "art-009", "u-leo", "active", 38, { events: [{ at: isoDaysAgo(40), title: "Rental requested" }, { at: isoDaysAgo(38), title: "Delivered and hung" }] }),
-  rental("r-2054", "art-011", "u-ama", "active", 79, { handover: "pickup", events: [{ at: isoDaysAgo(81), title: "Rental requested" }, { at: isoDaysAgo(79), title: "Picked up from the studio" }] }),
+  rental("r-2054", "art-011", "u-ama", "active", 120, { handover: "pickup", terms: 2, events: [{ at: isoDaysAgo(122), title: "Rental requested" }, { at: isoDaysAgo(120), title: "Picked up from the studio" }, { at: isoDaysAgo(32), title: "Renewed for another 3 months" }] }),
   rental("r-2055", "art-012", "u-mei", "returned", 92, { returnSlot: "Fri, Nov 6 · 14:00–16:00", events: [
     { at: isoDaysAgo(94), title: "Rental requested" }, { at: isoDaysAgo(92), title: "Delivered and hung" }, { at: isoDaysAgo(3), title: "Return booked" }, { at: isoDaysAgo(1), title: "Collected by Mara" }] }),
   rental("r-1990", "art-013", "u-priya", "closed", 150, { review: 5, events: [{ at: isoDaysAgo(150), title: "Rental started" }, { at: isoDaysAgo(60), title: "Deposit released" }] }),

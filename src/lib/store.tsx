@@ -3,7 +3,7 @@
 // In-memory app state. Client-side navigation keeps it; a hard refresh resets to the seed data on purpose.
 import { createContext, useCallback, useContext, useMemo, useReducer, type ReactNode } from "react";
 import {
-  ARTISTS, ME_ARTIST, ME_RENTER, RENTERS, RENTAL_DAYS, SEED_ARTWORKS, SEED_PURCHASES, SEED_RENTALS, SEED_THREADS, TODAY, seedStatuses,
+  ARTISTS, DECISION_DAY, ME_ARTIST, ME_RENTER, RENTERS, RENTAL_DAYS, SEED_ARTWORKS, SEED_PURCHASES, SEED_RENTALS, SEED_THREADS, TODAY, seedStatuses,
   type Artwork, type Claim, type Handover, type Purchase, type Rental, type Thread,
 } from "./data";
 
@@ -87,7 +87,7 @@ function useActions(s: State, dispatch: (a: Action) => void) {
         const id = `r-${3000 + s.rentals.length}`;
         dispatch({ type: "request", rental: {
           id, artworkId, renterId: ME_RENTER, artistId: a.artistId, status: "requested", startDate: opts.startDate.toISOString(),
-          handover: opts.handover, deliveryFee: opts.handover === "delivery" ? a.deliveryFee : 0, rentFee: a.rentFee, deposit: a.deposit,
+          handover: opts.handover, deliveryFee: opts.handover === "delivery" ? a.deliveryFee : 0, rentFee: a.rentFee, deposit: a.deposit, terms: 1,
           note: opts.note, events: [{ at: now(), title: "Rental requested" }],
         } });
         toast("Request sent", `${firstName(a.artistId)} usually replies within a day.`);
@@ -109,7 +109,7 @@ function useActions(s: State, dispatch: (a: Action) => void) {
       buyFromRental: (id: string) => {
         const r = rental(id); const a = artwork(r.artworkId);
         dispatch({ type: "rental", id, patch: { status: "bought" }, event: "Bought with rent credited" });
-        dispatch({ type: "purchase", purchase: { id: `p-${Date.now()}`, artworkId: a.id, buyerId: r.renterId, price: a.price, credit: r.rentFee, at: now(), fromRentalId: id } });
+        dispatch({ type: "purchase", purchase: { id: `p-${Date.now()}`, artworkId: a.id, buyerId: r.renterId, price: a.price, credit: Math.min(rentPaid(r), a.price), at: now(), fromRentalId: id } });
         toast(`${a.title} is yours`, `Deposit of $${r.deposit} refunded.`);
       },
       buyOutright: (artworkId: string, handover: Handover) => {
@@ -117,13 +117,18 @@ function useActions(s: State, dispatch: (a: Action) => void) {
         dispatch({ type: "purchase", purchase: { id: `p-${Date.now()}`, artworkId, buyerId: ME_RENTER, price: a.price + (handover === "delivery" ? a.deliveryFee : 0), credit: 0, at: now() } });
         toast(`${a.title} is yours`, `${firstName(a.artistId)} will be in touch about ${handover === "delivery" ? "delivery" : "pickup"}.`);
       },
+      renew: (id: string) => {
+        const r = rental(id);
+        dispatch({ type: "rental", id, patch: { terms: r.terms + 1 }, event: "Renewed for another 3 months" });
+        toast("Renewed for 3 more months", `$${r.rentFee} charged. It still counts toward the price.`);
+      },
       bookReturn: (id: string, slot: string) => { dispatch({ type: "rental", id, patch: { status: "return_booked", returnSlot: slot }, event: "Return booked" }); toast("Return booked", slot); },
       markCollected: (id: string) => { dispatch({ type: "rental", id, patch: { status: "returned" }, event: "Collected by artist", artworkStatus: "available" }); toast("Marked as collected", "Inspect it within 48 hours."); },
       releaseDeposit: (id: string) => { const r = rental(id); dispatch({ type: "rental", id, patch: { status: "closed" }, event: "Deposit released" }); toast("Deposit released", `$${r.deposit} goes back to ${firstName(r.renterId)}.`); },
       fileClaim: (id: string, claim: Omit<Claim, "status">) => { dispatch({ type: "rental", id, patch: { status: "claim", claim: { ...claim, status: "open" } }, event: `Damage reported · $${claim.amount}` }); toast("Damage reported", "The renter has 72 hours to respond."); },
       respondClaim: (id: string, accept: boolean) => {
         const r = rental(id);
-        dispatch({ type: "rental", id, patch: { status: accept ? "closed" : "claim", claim: { ...r.claim!, status: accept ? "accepted" : "disputed" } }, event: accept ? "Claim accepted, remaining deposit released" : "Claim disputed, Hangtime is reviewing" });
+        dispatch({ type: "rental", id, patch: { status: accept ? "closed" : "claim", claim: { ...r.claim!, status: accept ? "accepted" : "disputed" } }, event: accept ? "Claim accepted, remaining deposit released" : "Claim disputed, The Art Library is reviewing" });
         toast(accept ? "Claim accepted" : "Claim disputed", accept ? `$${r.deposit - r.claim!.amount} of your deposit is on its way back.` : "We'll review both sets of photos within 3 days.");
       },
       review: (id: string, stars: number) => { dispatch({ type: "rental", id, patch: { review: stars } }); toast("Thanks for the review"); },
@@ -161,6 +166,14 @@ export function useStore() {
 export function dayOf(r: Rental) {
   return Math.max(0, Math.floor((TODAY.getTime() - new Date(r.startDate).getTime()) / 86400000));
 }
+/** End of the current term: renewals push it out 90 days at a time. */
 export function endDate(r: Rental) {
-  const d = new Date(r.startDate); d.setDate(d.getDate() + RENTAL_DAYS); return d;
+  const d = new Date(r.startDate); d.setDate(d.getDate() + RENTAL_DAYS * r.terms); return d;
 }
+/** The keep / renew / return choice opens 14 days before the current term ends. */
+export const decisionDay = (r: Rental) => RENTAL_DAYS * r.terms - (RENTAL_DAYS - DECISION_DAY);
+export const rentPaid = (r: Rental) => r.rentFee * r.terms;
+/** Every rent payment counts toward the price, so long renters can end up owing nothing. */
+export const leftToPay = (r: Rental, price: number) => Math.max(0, price - rentPaid(r));
+/** Renewing is offered only while another term would still leave something to pay. */
+export const canRenew = (r: Rental, price: number) => rentPaid(r) + r.rentFee < price;

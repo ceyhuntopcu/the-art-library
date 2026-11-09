@@ -17,7 +17,7 @@ import { RentalHistory, RentalProgress } from "@/components/rental-bits";
 import { Actions, Missing, RentalBadge, SummaryRow } from "@/components/ui-bits";
 import { RENTERS } from "@/lib/data";
 import { money, shortDate } from "@/lib/format";
-import { endDate, useStore } from "@/lib/store";
+import { endDate, rentPaid, useStore } from "@/lib/store";
 
 const REASONS = ["Frame damaged", "Scratch or scuff on the surface", "Water or moisture damage", "Missing hardware", "Other"];
 
@@ -78,7 +78,7 @@ export default function StudioRentalPage() {
           {rental.status === "active" ? (
             <section className="grid gap-4">
               <RentalProgress rental={rental} />
-              <p className="text-[15px] text-muted">{first} decides around day 76 whether to buy it or send it back. If they buy, the {money(rental.rentFee)} they paid comes off the {money(art.price)} price.</p>
+              <p className="text-[15px] text-muted">{rental.terms > 1 ? `${first} has renewed ${rental.terms - 1}× and paid ${money(rentPaid(rental))} in rent so far. ` : ""}Two weeks before each term ends, {first} decides whether to buy it, renew it or send it back. Every rent payment comes off the {money(art.price)} price if they buy.</p>
             </section>
           ) : null}
 
@@ -102,11 +102,11 @@ export default function StudioRentalPage() {
 
           {rental.status === "claim" && rental.claim ? (
             <Alert tone={rental.claim.status === "disputed" ? "warning" : "info"} title={rental.claim.status === "disputed" ? `${first} disputed your claim` : `Waiting for ${first} to respond`}>
-              {rental.claim.reason}: {money(rental.claim.amount)}. {rental.claim.status === "disputed" ? "Hangtime will review both sets of photos within 3 days." : "They have 72 hours to accept or dispute."}
+              {rental.claim.reason}: {money(rental.claim.amount)}. {rental.claim.status === "disputed" ? "The Art Library will review both sets of photos within 3 days." : "They have 72 hours to accept or dispute."}
             </Alert>
           ) : null}
           {rental.status === "closed" ? <Alert tone="success" title="Rental closed">{rental.claim?.status === "accepted" ? `You received ${money(rental.claim.amount)} from the deposit.` : "Deposit released in full."}{rental.review ? ` ${first} rated it ${rental.review} ★.` : ""}</Alert> : null}
-          {rental.status === "bought" ? <Alert tone="success" title={`${first} bought it`}>They paid {money(art.price - rental.rentFee)} on top of the {money(rental.rentFee)} rent.</Alert> : null}
+          {rental.status === "bought" ? <Alert tone="success" title={`${first} bought it`}>You received the full {money(art.price)}: {money(Math.min(rentPaid(rental), art.price))} in rent plus {money(Math.max(0, art.price - rentPaid(rental)))} at purchase.</Alert> : null}
           {rental.status === "declined" || rental.status === "cancelled" ? <Alert tone="info" title={rental.status === "declined" ? "You declined this request" : `${first} cancelled`}>Nothing was charged.</Alert> : null}
 
           <section className="grid gap-2.5 rounded-[var(--radius-panel)] bg-soft p-5">

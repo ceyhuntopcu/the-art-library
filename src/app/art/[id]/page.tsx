@@ -45,7 +45,7 @@ export default function ArtworkPage() {
 
         <div className="grid content-start gap-6">
           <div className="grid gap-2">
-            <div className="flex items-center gap-2"><StatusBadge status={art.status} /><span className="text-[13px] text-muted">Listed {art.listedDaysAgo === 0 ? "today" : `${art.listedDaysAgo} days ago`}</span></div>
+            <div className="flex items-center gap-2"><StatusBadge status={art.status} /><span className="text-[13px] text-muted">Listed {art.listedDaysAgo === 0 ? "today" : art.listedDaysAgo === 1 ? "yesterday" : `${art.listedDaysAgo} days ago`}</span></div>
             <h1 className="serif text-[40px] leading-[1.02] md:text-5xl">{art.title}</h1>
             <p className="text-muted">{artist.name}, {art.year} · {art.medium} · {art.width} × {art.height} cm</p>
           </div>
@@ -57,13 +57,13 @@ export default function ArtworkPage() {
             </div>
           ) : (
             <>
-              <SegmentedControl label="Rent or buy" value={mode} onValueChange={setMode} options={[{ value: "rent", label: "Rent for 3 months" }, { value: "buy", label: "Buy now" }]} />
+              <SegmentedControl className="justify-self-start" label="Rent or buy" value={mode} onValueChange={setMode} options={[{ value: "rent", label: "Rent for 3 months" }, { value: "buy", label: "Buy now" }]} />
               {mode === "rent" ? (
                 <div className="grid gap-3">
                   <SummaryRow label="Rental for 3 months" value={<span className="font-medium">{money(art.rentFee)}</span>} />
                   <SummaryRow label={<Tooltip content="Charged when the artist approves, refunded after a clean return or when you buy."><span className="cursor-help underline decoration-dotted underline-offset-4">Refundable deposit</span></Tooltip>} value={money(art.deposit)} />
                   <SummaryRow label="If you decide to keep it" value={`${money(art.price - art.rentFee)} more`} muted />
-                  <p className="text-[13px] text-muted">Your {money(art.rentFee)} rent counts toward the {money(art.price)} price.</p>
+                  <p className="text-[13px] text-muted">After 3 months, keep it, renew it or send it back. Every rent payment counts toward the {money(art.price)} price.</p>
                 </div>
               ) : (
                 <div className="grid gap-3">

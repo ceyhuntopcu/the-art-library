@@ -32,10 +32,10 @@ export default function NewListingPage() {
   const [width, setWidth] = useState(60);
   const [height, setHeight] = useState(80);
   const [year, setYear] = useState(2026);
-  const [price, setPrice] = useState(1200);
-  const [rentFee, setRentFee] = useState(120);
-  const [deposit, setDeposit] = useState(300);
-  const [deliveryFee, setDeliveryFee] = useState(35);
+  const [price, setPrice] = useState(135);
+  const [rentFee, setRentFee] = useState(50);
+  const [deposit, setDeposit] = useState(40);
+  const [deliveryFee, setDeliveryFee] = useState(10);
   const [framed, setFramed] = useState(true);
   const [look, setLook] = useState(0);
   const [description, setDescription] = useState("");
@@ -44,7 +44,7 @@ export default function NewListingPage() {
 
   const draft: Artwork = {
     id: `art-${900 + artworks.length}`, title: title || "Untitled", artistId: ME_ARTIST, medium: medium as Medium, width, height, year, price, rentFee, deposit, deliveryFee, framed,
-    status: "available", listedDaysAgo: 0, description: description || "New to Hangtime.", art: { ...LOOKS[look], seed: 500 + artworks.length },
+    status: "available", listedDaysAgo: 0, description: description || "New to The Art Library.", art: { ...LOOKS[look], seed: 500 + artworks.length },
   };
   const titleError = tried && !title.trim() ? "Give the work a title." : undefined;
   const rentError = rentFee >= price ? "The rental fee should be less than the full price." : undefined;
@@ -83,17 +83,17 @@ export default function NewListingPage() {
               <NumberField id="width" label="Width" value={width} onValueChange={setWidth} min={10} max={300} step={5} suffix=" cm" />
               <NumberField id="height" label="Height" value={height} onValueChange={setHeight} min={10} max={300} step={5} suffix=" cm" />
             </div>
-            <Switch id="framed" label="Framed and ready to hang" checked={framed} onCheckedChange={setFramed} />
+            <div className="justify-self-start"><Switch id="framed" label="Framed and ready to hang" checked={framed} onCheckedChange={setFramed} /></div>
             <Textarea id="description" label="Description" rows={3} value={description} onChange={e => setDescription(e.target.value)} placeholder="What should someone know before living with it?" />
           </section>
 
           <section className="grid gap-4">
             <h2 className="serif text-2xl">Pricing</h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              <NumberField id="price" label="Full price" value={price} onValueChange={setPrice} min={50} max={50000} step={50} prefix="$" description="What it costs to buy outright" />
-              <NumberField id="rent" label="Rental for 3 months" value={rentFee} onValueChange={setRentFee} min={10} max={5000} step={5} prefix="$" description={`Most artists charge about 10%, so ${money(Math.round(price / 10))}`} />
-              <NumberField id="deposit" label="Refundable deposit" value={deposit} onValueChange={setDeposit} min={0} max={price} step={10} prefix="$" description="Covers damage or a missed return. Around 25% works well." />
-              <NumberField id="delivery" label="Delivery fee" value={deliveryFee} onValueChange={setDeliveryFee} min={0} max={500} step={5} prefix="$" description="Pickup from your studio is always free" />
+              <NumberField id="price" label="Full price" value={price} onValueChange={setPrice} min={20} max={5000} step={5} prefix="$" description="What it costs to buy outright" />
+              <NumberField id="rent" label="Rental for 3 months" value={rentFee} onValueChange={setRentFee} min={5} max={2000} step={5} prefix="$" description={`Most artists charge about a third, so ${money(Math.round(price / 15) * 5)}`} />
+              <NumberField id="deposit" label="Refundable deposit" value={deposit} onValueChange={setDeposit} min={0} max={price} step={5} prefix="$" description="Covers damage or a missed return. Around 30% of the price works well." />
+              <NumberField id="delivery" label="Delivery fee" value={deliveryFee} onValueChange={setDeliveryFee} min={0} max={200} step={1} prefix="$" description="Pickup from your studio is always free" />
             </div>
             {rentError ? <p className="text-[13px] text-[var(--danger)]">{rentError}</p> : null}
           </section>
@@ -109,7 +109,8 @@ export default function NewListingPage() {
           <div className="pointer-events-none max-w-xs"><ArtCard artwork={draft} /></div>
           <div className="grid gap-1.5 text-[13px] text-muted">
             <span>If someone rents it and keeps it, they pay {money(Math.max(0, price - rentFee))} more.</span>
-            <span>If they return it, you keep {money(rentFee)}.</span>
+            <span>Each renewal earns you another {money(rentFee)} and also counts toward the price.</span>
+            <span>If they return it, you keep every rent payment.</span>
           </div>
         </aside>
       </div>

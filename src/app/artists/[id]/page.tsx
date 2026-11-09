@@ -24,7 +24,7 @@ export default function ArtistPage() {
             <Badge size="sm">{artist.city}</Badge>
             <Badge size="sm">{artist.km} km from you</Badge>
             <Badge size="sm">{artist.rating} ★ · {artist.reviews} reviews</Badge>
-            <Badge size="sm">On Hangtime since {artist.joined}</Badge>
+            <Badge size="sm">Joined in {artist.joined}</Badge>
           </div>
         </div>
       </section>

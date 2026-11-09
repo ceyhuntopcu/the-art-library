@@ -18,16 +18,17 @@ export default function Home() {
   const live = artworks.filter(a => a.status !== "hidden");
   const featured = live.find(a => a.id === "art-001") ?? live[0];
   const fresh = [...live].sort((a, b) => a.listedDaysAgo - b.listedDaysAgo).slice(0, 8);
-  const affordable = live.filter(a => a.rentFee <= 100 && a.status === "available").slice(0, 4);
+  const affordable = live.filter(a => a.rentFee <= 30 && a.status === "available").slice(0, 4);
+  const cheapest = Math.min(...live.map(a => a.rentFee));
   const big = live.filter(a => a.width >= 90 && a.status === "available").slice(0, 4);
 
   return (
     <div className="container-page">
       <section className="grid items-center gap-10 py-12 md:grid-cols-[1.1fr_1fr] md:py-16">
         <div className="grid max-w-xl gap-6">
-          <span className="eyebrow">Original art, on loan · Montreal</span>
-          <h1 className="serif text-5xl leading-[1.02] md:text-6xl">Live with it for three months. Keep it only if you love it.</h1>
-          <p className="text-[16px] text-muted">Rent original work from independent Montreal artists. When the three months are up, buy it with your rent taken off the price, or send it back.</p>
+          <span className="eyebrow">Original art on loan · Montreal</span>
+          <h1 className="serif text-[42px] leading-[1.02] sm:text-5xl md:text-6xl">Real art on your walls, without breaking the bank.</h1>
+          <p className="text-[16px] text-muted">Rent original pieces by Montreal&apos;s emerging artists for three months, from {money(cheapest)}. When the term is up, renew it, return it, or buy it with every rent payment taken off the price.</p>
           <form className="grid gap-3" onSubmit={e => { e.preventDefault(); router.push(`/browse${q ? `?q=${encodeURIComponent(q)}` : ""}`); }}>
             <SearchField id="home-search" label="Search artworks" placeholder="Try ‘blue’, ‘oil’ or an artist’s name" value={q} onValueChange={setQ} />
             <Actions>
@@ -44,7 +45,7 @@ export default function Home() {
 
       <nav aria-label="Browse by medium" className="flex flex-wrap gap-2 border-y border-line py-4">
         {MEDIUM_LINKS.map(m => <Link key={m} href={`/browse?medium=${encodeURIComponent(m)}`} className="rounded-full border border-line px-3.5 py-1.5 text-[13px] transition hover:border-foreground">{m}</Link>)}
-        <Link href="/browse?maxRent=100" className="rounded-full border border-line px-3.5 py-1.5 text-[13px] transition hover:border-foreground">Under $100 for 3 months</Link>
+        <Link href="/browse?maxRent=30" className="rounded-full border border-line px-3.5 py-1.5 text-[13px] transition hover:border-foreground">Under $30 for 3 months</Link>
       </nav>
 
       <Shelf title="New this week" href="/browse" items={fresh} />
@@ -52,9 +53,9 @@ export default function Home() {
       <section className="mt-16 grid gap-8 rounded-[var(--radius-panel)] bg-soft px-6 py-10 md:grid-cols-3 md:px-10">
         <h2 className="serif text-3xl md:col-span-3">How it works</h2>
         {[
-          ["Pick a piece", "Every listing shows the price for three months, the full price, and the deposit the artist set."],
-          ["Live with it", "Pick it up for free or have the artist deliver it. It stays on your wall for 90 days."],
-          ["Keep it or return it", "Buy it with your rent taken off the price, or book a return and get your deposit back."],
+          ["Pick a piece", "Every listing shows the price for three months, the full price, and the small deposit the artist set."],
+          ["Live with it", "Pick it up for free or have the artist deliver it. It stays on your wall for three months."],
+          ["Renew, return or buy", "Keep it longer, send it back and get your deposit back, or buy it with all your rent taken off the price."],
         ].map(([t, d], i) => (
           <div key={t} className="grid content-start gap-2">
             <span className="text-[13px] text-muted tnum">Step {i + 1}</span>
@@ -64,13 +65,13 @@ export default function Home() {
         ))}
       </section>
 
-      <Shelf title="Under $100 for three months" href="/browse?maxRent=100" items={affordable} />
+      <Shelf title="Under $30 for three months" href="/browse?maxRent=30" items={affordable} />
       <Shelf title="For a big wall" href="/browse?size=large" items={big} />
 
       <section className="mt-16 flex flex-col items-start justify-between gap-6 border-t border-line pt-10 md:flex-row md:items-center">
         <div className="grid max-w-lg gap-2">
           <h2 className="serif text-3xl">Are you an artist?</h2>
-          <p className="text-[15px] text-muted">Earn from work that would otherwise sit in the studio. You set the price, the rental fee and the deposit.</p>
+          <p className="text-[15px] text-muted">Get your work onto real walls and earn from pieces that would otherwise sit in the studio. You set the price, the rental fee and the deposit.</p>
         </div>
         <LinkButton href="/studio/new" variant="secondary">List a work</LinkButton>
       </section>

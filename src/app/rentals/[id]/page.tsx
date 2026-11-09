@@ -13,9 +13,9 @@ import { Avatar } from "@/components/arc/avatar/avatar";
 import { ArtworkArt } from "@/components/artwork-art";
 import { RentalHistory, RentalProgress } from "@/components/rental-bits";
 import { Actions, RentalBadge, SummaryRow, Missing } from "@/components/ui-bits";
-import { DECISION_DAY, TODAY } from "@/lib/data";
+import { TODAY } from "@/lib/data";
 import { artistById, money, shortDate } from "@/lib/format";
-import { dayOf, endDate, useStore } from "@/lib/store";
+import { canRenew, dayOf, decisionDay, endDate, leftToPay, rentPaid, useStore } from "@/lib/store";
 
 const HOURS = ["10:00–12:00", "14:00–16:00", "18:00–20:00"];
 
@@ -41,8 +41,10 @@ export default function RentalPage() {
   const artist = artistById(rental.artistId);
   const first = artist.name.split(" ")[0];
   const day = dayOf(rental);
-  const deciding = rental.status === "active" && day >= DECISION_DAY;
-  const owe = art.price - rental.rentFee;
+  const deciding = rental.status === "active" && day >= decisionDay(rental);
+  const owe = leftToPay(rental, art.price);
+  const paid = rentPaid(rental);
+  const renewable = canRenew(rental, art.price);
   const slots = returnSlots(endDate(rental));
   const chosenSlot = slot && slots.includes(slot) ? slot : slots[0];
 
@@ -77,11 +79,11 @@ export default function RentalPage() {
           {rental.status === "active" && !deciding ? (
             <section className="grid gap-5">
               <RentalProgress rental={rental} />
-              <p className="text-[15px]">It&apos;s yours to enjoy until {shortDate(endDate(rental))}. Around day {DECISION_DAY} we&apos;ll ask whether you want to keep it.</p>
+              <p className="text-[15px]">It&apos;s yours to enjoy until {shortDate(endDate(rental))}. Two weeks before then we&apos;ll ask whether you want to keep it, renew it or send it back.</p>
               <Actions>
-                <Button variant="primary" onClick={() => setBuyOpen(true)}>Buy it now for {money(owe)}</Button>
+                <Button variant="primary" onClick={() => setBuyOpen(true)}>{owe ? `Buy it now for ${money(owe)}` : "Keep it"}</Button>
                 <Button variant="secondary" onClick={() => setReturnOpen(true)}>Return early</Button>
-                <Button variant="ghost" onClick={() => actions.skipAhead(rental.id, DECISION_DAY - day)}>Demo: skip to day {DECISION_DAY}</Button>
+                <Button variant="ghost" onClick={() => actions.skipAhead(rental.id, decisionDay(rental) - day)}>Demo: skip to decision time</Button>
               </Actions>
             </section>
           ) : null}
@@ -90,13 +92,21 @@ export default function RentalPage() {
             <section className="grid gap-5">
               <RentalProgress rental={rental} />
               <h2 className="serif text-[26px] leading-tight md:text-3xl">{art.title} has been on your wall for {day} days. What next?</h2>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className={`grid gap-4 ${renewable ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
                 <div className="grid content-start gap-3 rounded-[var(--radius-panel)] border border-line p-5">
                   <span className="text-[15px] font-medium">Keep it</span>
                   <span className="serif text-4xl tnum">{money(owe)}</span>
-                  <p className="text-[13px] text-muted">{money(art.price)} minus the {money(rental.rentFee)} you&apos;ve already paid. Your {money(rental.deposit)} deposit is refunded.</p>
-                  <Actions className="pt-1"><Button variant="primary" onClick={() => setBuyOpen(true)}>Buy {art.title}</Button></Actions>
+                  <p className="text-[13px] text-muted">{owe ? `${money(art.price)} minus the ${money(paid)} you've already paid in rent.` : "Your rent has already covered the full price."} Your {money(rental.deposit)} deposit is refunded.</p>
+                  <Actions className="pt-1"><Button variant="primary" onClick={() => setBuyOpen(true)}>{owe ? "Buy it" : "Keep it"}</Button></Actions>
                 </div>
+                {renewable ? (
+                  <div className="grid content-start gap-3 rounded-[var(--radius-panel)] border border-line p-5">
+                    <span className="text-[15px] font-medium">Renew it</span>
+                    <span className="serif text-4xl tnum">{money(rental.rentFee)}</span>
+                    <p className="text-[13px] text-muted">Three more months on your wall. This rent counts toward the price too, so buying later would cost {money(Math.max(0, owe - rental.rentFee))}.</p>
+                    <Actions className="pt-1"><Button variant="secondary" onClick={() => actions.renew(rental.id)}>Renew for 3 months</Button></Actions>
+                  </div>
+                ) : null}
                 <div className="grid content-start gap-3 rounded-[var(--radius-panel)] border border-line p-5">
                   <span className="text-[15px] font-medium">Send it back</span>
                   <span className="serif text-4xl">Free</span>
@@ -120,7 +130,7 @@ export default function RentalPage() {
                   <Button variant="primary" onClick={() => actions.respondClaim(rental.id, true)}>Accept and release {money(rental.deposit - rental.claim.amount)}</Button>
                   <Button variant="secondary" onClick={() => actions.respondClaim(rental.id, false)}>Dispute claim</Button>
                 </Actions>
-              ) : <p className="text-[14px] text-muted">Hangtime is comparing the handover and return photos. You&apos;ll hear back within 3 days.</p>}
+              ) : <p className="text-[14px] text-muted">The Art Library is comparing the handover and return photos. You&apos;ll hear back within 3 days.</p>}
             </section>
           ) : null}
 
@@ -129,15 +139,16 @@ export default function RentalPage() {
               <Alert tone="success" title="Rental closed">
                 {rental.claim?.status === "accepted" ? `${money(rental.deposit - rental.claim.amount)} of your deposit was refunded.` : `Your ${money(rental.deposit)} deposit was refunded.`}
               </Alert>
-              <Rating label={`Rate renting from ${first}`} value={rental.review ?? 0} onChange={v => actions.review(rental.id, v)} />
+              <Rating className="justify-self-start" label={`Rate renting from ${first}`} value={rental.review ?? 0} onChange={v => actions.review(rental.id, v)} />
             </section>
           ) : null}
 
-          {rental.status === "bought" ? <Alert tone="success" title="You own this work">You paid {money(owe)} after {money(rental.rentFee)} rent credit, and your deposit was refunded.</Alert> : null}
+          {rental.status === "bought" ? <Alert tone="success" title="You own this work">Your {money(Math.min(paid, art.price))} of rent counted toward the {money(art.price)} price, and your deposit was refunded.</Alert> : null}
           {rental.status === "declined" || rental.status === "cancelled" ? <Alert tone="info" title={rental.status === "declined" ? `${first} couldn't take this one` : "You cancelled this request"}>Nothing was charged. <Link href="/browse" className="link">Browse similar works</Link></Alert> : null}
 
           <section className="grid gap-2.5 rounded-[var(--radius-panel)] bg-soft p-5">
             <SummaryRow label="Rental for 3 months" value={money(rental.rentFee)} />
+            {rental.terms > 1 ? <SummaryRow label={`Rent paid over ${rental.terms} terms`} value={money(paid)} /> : null}
             <SummaryRow label={rental.handover === "delivery" ? "Delivery" : "Pickup"} value={rental.deliveryFee ? money(rental.deliveryFee) : "Free"} />
             <SummaryRow label="Deposit" value={money(rental.deposit)} />
             <SummaryRow label="Full price" value={money(art.price)} muted />
@@ -155,13 +166,13 @@ export default function RentalPage() {
         <DialogContent title={`Buy ${art.title}`} description="Your rent counts toward the price.">
           <div className="grid gap-2.5 py-2">
             <SummaryRow label="Full price" value={money(art.price)} />
-            <SummaryRow label="Rent already paid" value={`−${money(rental.rentFee)}`} />
+            <SummaryRow label="Rent already paid" value={`−${money(Math.min(paid, art.price))}`} />
             <SummaryRow label="Pay today" value={money(owe)} strong />
             <SummaryRow label="Deposit refunded" value={money(rental.deposit)} muted />
           </div>
           <Actions className="justify-end pt-3">
             <Button variant="ghost" onClick={() => setBuyOpen(false)}>Not yet</Button>
-            <Button variant="primary" onClick={() => { actions.buyFromRental(rental.id); setBuyOpen(false); }}>Pay {money(owe)}</Button>
+            <Button variant="primary" onClick={() => { actions.buyFromRental(rental.id); setBuyOpen(false); }}>{owe ? `Pay ${money(owe)}` : "Keep it"}</Button>
           </Actions>
         </DialogContent>
       </Dialog>

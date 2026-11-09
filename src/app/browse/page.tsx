@@ -74,7 +74,7 @@ function Browse() {
           </div>
           <div className={`${filtersOpen ? "grid" : "hidden"} gap-4 md:contents`}>
             <Select id="browse-size" label="Size" value={size} onValueChange={setSize} options={[{ value: "any", label: "Any size" }, { value: "small", label: "Small (up to 50 cm)" }, { value: "medium", label: "Medium (50–90 cm)" }, { value: "large", label: "Large (over 90 cm)" }]} />
-            <Select id="browse-rent" label="Price for 3 months" value={maxRent} onValueChange={setMaxRent} options={[{ value: "any", label: "Any price" }, { value: "100", label: "Up to $100" }, { value: "200", label: "Up to $200" }, { value: "350", label: "Up to $350" }]} />
+            <Select id="browse-rent" label="Price for 3 months" value={maxRent} onValueChange={setMaxRent} options={[{ value: "any", label: "Any price" }, { value: "30", label: "Up to $30" }, { value: "50", label: "Up to $50" }, { value: "80", label: "Up to $80" }]} />
             <Select id="browse-sort" label="Sort by" value={sort} onValueChange={setSort} options={[{ value: "newest", label: "Newest" }, { value: "rent-asc", label: "Lowest rental price" }, { value: "price-desc", label: "Highest full price" }, { value: "nearest", label: "Nearest to you" }]} />
           </div>
         </div>

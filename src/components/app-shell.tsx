@@ -118,7 +118,7 @@ function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-background/90 backdrop-blur">
       <div className="container-page flex h-16 items-center gap-4 lg:gap-6">
-        <Link href={role === "artist" ? "/studio" : "/"} className="serif text-[26px] italic leading-none">Hangtime</Link>
+        <Link href={role === "artist" ? "/studio" : "/"} className="serif whitespace-nowrap text-[23px] italic leading-none sm:text-[26px]">The Art Library</Link>
         <nav aria-label="Main" className="hidden items-center gap-6 lg:flex">{links}</nav>
         <div className="ml-auto flex items-center gap-3">
           <SegmentedControl label="View as" value={role} onValueChange={switchRole} options={[{ value: "renter", label: "Collector" }, { value: "artist", label: "Artist" }]} />
@@ -134,8 +134,8 @@ function Footer() {
     <footer className="mt-24 border-t border-line pb-20 lg:pb-0">
       <div className="container-page flex flex-col gap-6 py-10 sm:flex-row sm:items-end sm:justify-between">
         <div className="grid gap-1">
-          <span className="serif text-2xl italic">Hangtime</span>
-          <span className="text-[13px] text-muted">Rent original art for three months. Keep it if you love it.</span>
+          <span className="serif text-2xl italic">The Art Library</span>
+          <span className="text-[13px] text-muted">Borrow original art from Montreal&apos;s emerging artists, three months at a time.</span>
         </div>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-muted">
           <Link href="/browse" className="hover:text-foreground">Browse</Link>

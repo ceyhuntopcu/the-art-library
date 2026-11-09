@@ -4,19 +4,19 @@ const RENTER = [
   ["Find a piece", "Browse by medium, size or price. Every listing shows the price for three months, the full price and the deposit the artist set."],
   ["Send a request", "Pick a start date and choose free pickup or delivery from the artist. You're charged only once the artist approves."],
   ["Live with it for 90 days", "Hang it, move it around, see how it feels in different light."],
-  ["Keep it or return it", "Around day 76 we ask. Buy it with your rent taken off the price, or book a free return and get your deposit back."],
+  ["Renew, return or buy", "Two weeks before the end we ask. Renew for another three months, book a free return and get your deposit back, or buy it with all your rent taken off the price."],
 ];
 const ARTIST = [
   ["List a work", "Set the full price, the rental fee for three months and a refundable deposit."],
   ["Approve requests", "See who wants it and why, then approve or decline within 48 hours."],
   ["Hand it over", "Let them pick it up for free, or deliver it for the fee you set."],
-  ["Get it back or get paid", "Inspect the return and release the deposit, or report damage. If they buy, you get the full price."],
+  ["Get paid as it goes", "Every rental and renewal pays you. Inspect returns and release the deposit, or report damage. If they buy, you get the full price."],
 ];
 const FAQ = [
-  ["Does my rent count toward the price?", "Yes. If a $1,800 work rents for $180 and you keep it, you pay $1,620 more."],
+  ["Does my rent count toward the price?", "Yes, every payment. If a $135 piece rents for $50 and you keep it after one term, you pay $85 more. Renew once and you pay $35."],
   ["What's the deposit for?", "It protects the artist if the work comes back damaged or doesn't come back. It's charged when the artist approves and refunded after a clean return or when you buy."],
   ["Can I return it early?", "Yes, book a return at any time. The rental fee isn't refunded."],
-  ["How long is a rental?", "Always three months (90 days)."],
+  ["How long is a rental?", "Three months at a time. Renew as often as you like until your rent adds up to the price."],
 ];
 
 export default function HowItWorksPage() {
